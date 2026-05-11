@@ -1,0 +1,82 @@
+// ============================================================
+// firestore.indexes.json — Composite indexes for queries
+// ============================================================
+
+{
+  "indexes": [
+    {
+      "collectionGroup": "calls",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "callerId",   "order": "ASCENDING" },
+        { "fieldPath": "startedAt",  "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "calls",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "calleeId",   "order": "ASCENDING" },
+        { "fieldPath": "startedAt",  "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
+
+/*
+ ============================================================
+ FIRESTORE SCHEMA REFERENCE
+ ============================================================
+
+ ── users/{userId} ──────────────────────────────────────────
+ {
+   uid:           string,          // Firebase Auth UID
+   name:          string,          // Display name
+   photoURL:      string | null,   // Profile picture URL
+   phoneNumber:   string | null,   // E.164 format: "+8801XXXXXXXXX"
+   email:         string | null,
+   status:        "online" | "offline",
+   statusMessage: string,          // "Hey there! I am using MissCall"
+   fcmToken:      string | null,   // FCM push token for this device
+   lastSeen:      Timestamp,
+   createdAt:     Timestamp,
+   updatedAt:     Timestamp,
+ }
+
+ ── calls/{callId} ──────────────────────────────────────────
+ {
+   callId:    string,              // Same as roomId
+   callerId:  string,              // UID of caller
+   calleeId:  string,              // UID of callee
+   type:      "voice" | "video",
+   status:    "ringing" | "accepted" | "ended" | "missed",
+   startedAt: Timestamp,
+   endedAt:   Timestamp | null,
+   duration:  number | null,       // seconds
+ }
+
+ ── rooms/{roomId} ──────────────────────────────────────────
+ {
+   callerId:  string,
+   calleeId:  string,
+   type:      "voice" | "video",
+   status:    "ringing" | "accepted" | "ended",
+   offer:     { type: "offer", sdp: string },
+   answer:    { type: "answer", sdp: string } | null,
+   createdAt: Timestamp,
+   endedAt:   Timestamp | null,
+ }
+
+ ── rooms/{roomId}/callerCandidates/{id} ────────────────────
+ {
+   candidate:     string,
+   sdpMid:        string,
+   sdpMLineIndex: number,
+ }
+
+ ── rooms/{roomId}/calleeCandidates/{id} ────────────────────
+ {  (same structure)  }
+
+ ============================================================
+*/
