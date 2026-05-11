@@ -1,0 +1,58 @@
+// ============================================================
+// firestore.rules — Firestore Security Rules
+// Deploy: firebase deploy --only firestore:rules
+// ============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ─────────────────────────────────────
+    function isAuth()         { return request.auth != null; }
+    function isUser(uid)      { return isAuth() && request.auth.uid == uid; }
+    function isCallParty(doc) {
+      return isAuth() && (
+        request.auth.uid == doc.data.callerId ||
+        request.auth.uid == doc.data.calleeId
+      );
+    }
+
+    // ── users/{userId} ────────────────────────────────────────
+    // Anyone authenticated can read user profiles (for contacts)
+    // Only the user themselves can write their own profile
+    match /users/{userId} {
+      allow read:  if isAuth();
+      allow write: if isUser(userId);
+    }
+
+    // ── calls/{callId} ────────────────────────────────────────
+    // Only the caller or callee can read/write their call record
+    match /calls/{callId} {
+      allow read:   if isCallParty(resource);
+      allow create: if isAuth() && request.auth.uid == request.resource.data.callerId;
+      allow update: if isCallParty(resource);
+    }
+
+    // ── rooms/{roomId} ────────────────────────────────────────
+    // Signaling room — only caller/callee can read/write
+    match /rooms/{roomId} {
+      allow read:   if isAuth();  // Any auth user may read to answer
+      allow create: if isAuth();  // Caller creates the room
+      allow update: if isAuth() && (
+        request.auth.uid == resource.data.callerId ||
+        request.auth.uid == resource.data.calleeId
+      );
+
+      // ICE candidates sub-collections
+      match /callerCandidates/{candidateId} {
+        allow read:  if isAuth();
+        allow create: if isAuth() && request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.callerId;
+      }
+
+      match /calleeCandidates/{candidateId} {
+        allow read:  if isAuth();
+        allow create: if isAuth() && request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.calleeId;
+      }
+    }
+  }
+}
